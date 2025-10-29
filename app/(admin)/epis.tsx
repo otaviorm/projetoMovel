@@ -1,8 +1,9 @@
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../src/lib/supabase';
+
 
 type Epi = { id: string; name: string; size?: string | null; is_active: boolean };
 
@@ -31,7 +32,7 @@ export default function AdminEpisScreen() {
 
   useEffect(() => {
     (async () => {
-      // opcional: checar se é admin
+      // checar se é admin
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/(auth)/login'); return; }
 
@@ -63,6 +64,7 @@ export default function AdminEpisScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
+      <Stack.Screen options={{ title: 'EPIs Disponíveis' }} />
       <View style={{ padding: 16 }}>
         <Text style={{ fontSize: 20, fontWeight: '700', marginBottom: 12 }}>EPIs disponíveis</Text>
 

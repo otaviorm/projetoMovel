@@ -1,4 +1,5 @@
-import { router } from 'expo-router';
+import { Stack, router } from 'expo-router';
+
 import { useState } from 'react';
 import {
   Alert,
@@ -64,6 +65,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right', 'bottom']}>
+      <Stack.Screen options={{ title: 'Login' }} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ ios: 'padding' })}>
         <View style={{ flex: 1, justifyContent: 'center', padding: 20, gap: 16 }}>
           <Text style={{ fontSize: 24, fontWeight: '700', textAlign: 'center', marginBottom: 8 }}>

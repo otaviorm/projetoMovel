@@ -1,9 +1,8 @@
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Button,
   LayoutAnimation,
   Platform,
   Text,
@@ -14,81 +13,58 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../src/lib/supabase';
 
+// alterei aqui
+import { ProfileSheet } from '../components/ProfileSheet';
+
 type Profile = { full_name?: string | null; role?: string | null };
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+/**
+ * alteração: removi o componente "RightSheet" local
+ * Agora a tela usa somente o `ProfileSheet` de components/ProfileSheet.tsx,
+ * que já cuida de dimensões, safe areas e rolagem
+ */
+
 export default function ProfileScreen() {
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile>({});
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(true);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        // 0) Usuário logado
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { router.replace('/(auth)/login'); return; }
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) {
+          router.replace('/(auth)/login');
+          return;
+        }
+
         setEmail(user.email ?? '');
-        console.log('[DBG] user.id:', user.id, 'email:', user.email);
 
-        // 1) Garante que exista linha em profiles (idempotente)
-        //    (não sobrescreve full_name/role já definidos)
-        const { error: upErr } = await supabase
-          .from('profiles')
-          .upsert({ id: user.id }, { onConflict: 'id' });
-        if (upErr) console.log('[DBG] upsert profiles error:', upErr);
+        // garante linha no profiless
+        await supabase.from('profiles').upsert({ id: user.id }, { onConflict: 'id' });
 
-        // 2) Busca perfil de forma defensiva
-        let { data: rows, error: selErr } = await supabase
+        const res = await supabase
           .from('profiles')
-          .select('full_name, role')
+          .select('full_name, role, created_at')
           .eq('id', user.id)
           .order('created_at', { ascending: false })
           .limit(1);
 
-        console.log('[DBG] select profiles rows:', rows, 'error:', selErr);
+        if (res.error) throw res.error;
 
-        // 2a) Se não achou linha (rows vazio), tenta inserir explicitamente e ler de novo
-        if (!selErr && (!rows || rows.length === 0)) {
-          const { error: insErr } = await supabase
-            .from('profiles')
-            .insert({ id: user.id })
-            .select('full_name, role')
-            .limit(1);
-          console.log('[DBG] insert empty profile error:', insErr);
-
-          // Rebusca após tentativa de insert
-          const res2 = await supabase
-            .from('profiles')
-            .select('full_name, role')
-            .eq('id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1);
-          rows = res2.data ?? [];
-          selErr = res2.error ?? null;
-          console.log('[DBG] re-select profiles rows:', rows, 'error:', selErr);
-        }
-
-        if (selErr) throw selErr;
-
-        const prof: Profile = (rows && rows[0]) ? rows[0] : {};
+        const prof: Profile = res.data && res.data[0] ? res.data[0] : {};
         setProfile(prof ?? {});
 
-        // 3) Decide ADMIN via RPC (se a função existir no projeto)
         const { data: isAdm, error: rpcErr } = await supabase.rpc('is_admin');
-        if (!rpcErr) {
-          setIsAdmin(Boolean(isAdm));
-          console.log('[DBG] rpc is_admin =>', isAdm);
-        } else {
-          console.log('[DBG] rpc is_admin error:', rpcErr?.message);
-          // Fallback: usa o campo role
-          setIsAdmin(((prof.role ?? '').trim().toUpperCase() === 'ADMIN'));
-        }
+        setIsAdmin(!rpcErr ? Boolean(isAdm) : (prof.role ?? '').toUpperCase() === 'ADMIN');
       } catch (e: any) {
         Alert.alert('Erro', e?.message ?? 'Falha ao carregar perfil');
       } finally {
@@ -97,67 +73,139 @@ export default function ProfileScreen() {
     })();
   }, []);
 
+  function toggleSheet() {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSheetOpen((v) => !v);
+  }
+
   async function logout() {
     await supabase.auth.signOut();
     router.replace('/(auth)/login');
-  }
-
-  function toggle() {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setOpen(v => !v);
   }
 
   if (loading) {
     return (
       <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator />
-        <Text>Carregando perfil…</Text>
+        <Text>Carregando…</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, padding: 16, gap: 16 }} edges={['top', 'left', 'right']}>
-      <Text style={{ fontSize: 22, fontWeight: '700' }}>Início</Text>
-      <Text style={{ color: '#666' }}>
-        Bem-vindo(a){profile?.full_name ? `, ${profile.full_name}` : ''}!
-      </Text>
+    <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
+      {/* alterei aqui: título correto no header da tela */}
+      <Stack.Screen options={{ title: 'Início' }} />
 
-      {/* Botão só para ADMIN */}
-      {isAdmin && (
-        <View style={{ marginTop: 8 }}>
-          <Button title="Ver EPIs disponíveis" onPress={() => router.push('/(admin)/epis')} />
+      {/* Cabeçalho */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 16,
+          paddingTop: 8,
+          paddingBottom: 12,
+        }}
+      >
+        <View>
+          <Text style={{ fontSize: 22, fontWeight: '700' }}>Início</Text>
+          <Text style={{ color: '#666' }}>
+            Bem-vindo(a){profile?.full_name ? `, ${profile.full_name}` : ''}!
+          </Text>
         </View>
-      )}
 
-      {/* Aba de Perfil */}
-      <View style={{ borderWidth: 1, borderColor: '#ddd', borderRadius: 12, overflow: 'hidden', backgroundColor: '#fff' }}>
+        {/* Botão do Perfil */}
         <TouchableOpacity
-          onPress={toggle}
+          onPress={toggleSheet}
           style={{
-            paddingHorizontal: 16,
-            paddingVertical: 14,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: '#f6f6f6',
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderWidth: 1,
+            borderRadius: 10,
+            borderColor: '#ddd',
+            backgroundColor: '#fff',
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700' }}>Meu Perfil</Text>
-          <Text style={{ fontSize: 16 }}>{open ? '▲' : '▼'}</Text>
+          <Text style={{ fontWeight: '600' }}>Perfil ▸</Text>
         </TouchableOpacity>
+      </View>
 
-        {open && (
-          <View style={{ padding: 16, gap: 8 }}>
-            <Text><Text style={{ fontWeight: '600' }}>E-mail:</Text> {email}</Text>
-            <Text><Text style={{ fontWeight: '600' }}>Nome:</Text> {profile?.full_name ?? '—'}</Text>
-            <Text><Text style={{ fontWeight: '600' }}>Papel:</Text> {profile?.role ?? '—'}</Text>
-            <View style={{ marginTop: 8 }}>
-              <Button title="Sair" onPress={logout} />
-            </View>
-          </View>
+      {/* Atalhos principais */}
+      <View style={{ padding: 16, gap: 12 }}>
+        <ActionButton
+          title="Fazer pedido de EPI"
+          subtitle="Catálogo de EPIs para solicitar"
+          onPress={() => router.push('/(employee)')}
+        />
+
+        {isAdmin && (
+          <>
+            <ActionButton
+              title="Ver EPIs disponíveis"
+              subtitle="Catálogo e manutenção"
+              onPress={() => router.push('/(admin)/epis')}
+            />
+            <ActionButton
+              title="Ver Alertas"
+              subtitle="Estoque baixo e notificações"
+              onPress={() => router.push('/(admin)/alerts')}
+            />
+            <ActionButton
+              title="Entrada de EPIs"
+              subtitle="Adicionar unidades ao estoque"
+              onPress={() => router.push('/(admin)/stock-in')}
+            />
+            <ActionButton
+              title="Saída de EPIs"
+              subtitle="Dar baixa manual no estoque"
+              onPress={() => router.push('/(admin)/stock-out')}
+            />
+            <ActionButton
+              title="Pedidos Pendentes"
+              subtitle="Aprovar ou rejeitar solicitações"
+              onPress={() => router.push('/(admin)')}
+            />
+          </>
         )}
       </View>
+
+      {/* alterei: use o componente pronto ProfileSheet (substitui RightSheet) */}
+      <ProfileSheet
+        visible={sheetOpen}
+        email={email}
+        name={profile?.full_name ?? '—'}
+        role={profile?.role ?? '—'}
+        onClose={() => setSheetOpen(false)}
+        onLogout={logout}
+      />
     </SafeAreaView>
+  );
+}
+
+/** Botão grande de ação */
+function ActionButton({
+  title,
+  subtitle,
+  onPress,
+}: {
+  title: string;
+  subtitle?: string;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={{
+        padding: 14,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 12,
+        backgroundColor: '#fff',
+      }}
+    >
+      <Text style={{ fontSize: 16, fontWeight: '700' }}>{title}</Text>
+      {!!subtitle && <Text style={{ color: '#666', marginTop: 2 }}>{subtitle}</Text>}
+    </TouchableOpacity>
   );
 }
