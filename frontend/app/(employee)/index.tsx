@@ -80,9 +80,7 @@ export default function EmployeeHome() {
 
   async function submitOrder() {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         Alert.alert('Sessão expirada', 'Faça login novamente.');
         router.replace('/(auth)/login');
@@ -129,22 +127,7 @@ export default function EmployeeHome() {
       if (e2) throw e2;
 
       setCart({});
-
-      // 👇 melhoria: orientar o usuário para "Meus pedidos"
-      Alert.alert(
-        'Sucesso',
-        'Pedido enviado! Você poderá acompanhar o status em "Meus pedidos".',
-        [
-          {
-            text: 'Ver meus pedidos',
-            onPress: () => router.push('/(employee)/orders'),
-          },
-          {
-            text: 'OK',
-            style: 'cancel',
-          },
-        ]
-      );
+      Alert.alert('Sucesso', 'Pedido enviado! Você poderá acompanhar o status em "Meus pedidos".');
     } catch (err: any) {
       Alert.alert('Erro', err?.message ?? 'Falha ao enviar pedido');
     }
@@ -162,17 +145,17 @@ export default function EmployeeHome() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
-      <Stack.Screen options={{ title: 'Fazer pedido de EPI' }} />
-      <View style={{ padding: 16 }}>
-        <Text style={{ fontSize: 20, fontWeight: '700', marginBottom: 12 }}>
-          Catálogo de EPIs
-        </Text>
+    <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right', 'bottom']}>
+      <Stack.Screen options={{ title: 'Fazer Pedido de EPI' }} />
+
+      <View style={{ flex: 1, padding: 16 }}>
+        <Text style={{ fontSize: 20, fontWeight: '700', marginBottom: 12 }}>Catálogo de EPIs</Text>
 
         <FlatList
           data={epis}
           keyExtractor={(i) => i.id}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          contentContainerStyle={{ paddingBottom: 100 }} // espaço pro rodapé fixo
           renderItem={({ item }) => {
             const q = cart[item.id] ?? 0;
             const restante = Math.max(0, item.qty - q); // quanto ainda posso adicionar
@@ -235,11 +218,31 @@ export default function EmployeeHome() {
           ListEmptyComponent={<Text>Não há EPIs ativos cadastrados.</Text>}
         />
 
-        <Button
-          title={`Enviar pedido (${cartCount} itens)`}
-          onPress={submitOrder}
-          disabled={cartCount === 0}
-        />
+        {/* Rodapé fixo com o botão */}
+        <View
+          style={{
+            position: 'absolute',
+            left: 16,
+            right: 16,
+            bottom: 16,
+            backgroundColor: '#fff',
+            borderTopWidth: 1,
+            borderColor: '#ddd',
+            borderRadius: 12,
+            padding: 12,
+            shadowColor: '#000',
+            shadowOpacity: 0.08,
+            shadowRadius: 8,
+            shadowOffset: { width: 0, height: 2 },
+            elevation: 3,
+          }}
+        >
+          <Button
+            title={`Enviar pedido (${cartCount} itens)`}
+            onPress={submitOrder}
+            disabled={cartCount === 0}
+          />
+        </View>
       </View>
     </SafeAreaView>
   );
