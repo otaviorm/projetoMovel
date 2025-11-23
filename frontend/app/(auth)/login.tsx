@@ -36,13 +36,38 @@ export default function LoginScreen() {
     }
   }
 
-  // "Esqueci minha senha" — versão simples pro TCC
+  // "Esqueci minha senha"
   async function handleResetPassword() {
-    Alert.alert(
-      'Redefinir senha',
-      'Para redefinir sua senha, procure o responsável pelo sistema ou use a opção "Alterar senha" após fazer login.'
-    );
+    if (!email) {
+      return Alert.alert(
+        'Atenção',
+        'Informe seu e-mail no campo acima para enviar o link de redefinição.'
+      );
+    }
+
+    try {
+      const redirectUrl = 'https://password-reset-mauve.vercel.app';
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      });
+
+      if (error) throw error;
+
+      Alert.alert(
+        'Verifique seu e-mail',
+        'Enviamos um link para redefinir sua senha. Toque no link do e-mail para continuar.'
+      );
+    } catch (e: any) {
+      Alert.alert(
+        'Erro ao enviar',
+        e?.message ?? 'Não foi possível enviar o e-mail.'
+      );
+    }
   }
+
+
+  
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right', 'bottom']}>
