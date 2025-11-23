@@ -122,6 +122,34 @@ export default function AdminHome() {
     }
   }
 
+  /** Função de deixar pendente (com comentário) */
+  async function addPendingReason(id: string) {
+    Alert.prompt(
+      "Adicionar motivo",
+      "Explique ao colaborador o motivo pelo qual o pedido continua pendente:",
+      async (text) => {
+        if (!text || text.trim() === "") {
+          Alert.alert("Atenção", "O motivo não pode estar vazio.");
+          return;
+        }
+
+        try {
+          const { error } = await supabase
+            .from("requests")
+            .update({ reason: text })
+            .eq("id", id);
+
+          if (error) throw error;
+
+          Alert.alert("Sucesso", "Comentário adicionado ao pedido!");
+          loadRequests();
+        } catch (err: any) {
+          Alert.alert("Erro", err.message ?? "Não foi possível salvar o comentário.");
+        }
+      }
+    );
+  }
+
   /** Função para rejeitar */
   async function rejectRequest(id: string) {
     try {
@@ -235,7 +263,7 @@ export default function AdminHome() {
                 }}
               >
                 <Button title="Aprovar" color="#4CAF50" onPress={() => approveRequest(item.id)} />
-
+                <Button title="Manter pendente" color="#FFA500" onPress={() => addPendingReason(item.id)} />
                 <Button title="Rejeitar" color="#E53935" onPress={() => rejectRequest(item.id)} />
               </View>
             </View>

@@ -1,148 +1,161 @@
-# Controle de EPIs – Carbon Ambiental
+#  Projeto Móvel – Sistema de Controle de EPIs
 
-Aplicativo mobile desenvolvido em **React Native (Expo)** com **Supabase** como backend.  
-O sistema tem como objetivo facilitar o **controle de Equipamentos de Proteção Individual (EPIs)** dentro de empresas, eliminando o uso de planilhas manuais e centralizando a gestão de solicitações e estoque.
+## Projeto da disciplina de Programação de Dispositivos Móveis com React Native + Expo (Android)
+**Orientador:** Prof. Luiz Gustavo Turatti
 
----
-
-## Funcionalidades Principais
-
-- **Login e Cadastro de Usuários**
-  - Autenticação via Supabase Auth
-  - Redefinição e alteração de senha dentro do app
-
-- **Gestão de EPIs**
-  - Cadastro, edição e visualização de estoque
-  - Alerta para níveis baixos de estoque
-
-- **Pedidos de EPIs**
-  - Solicitação de EPIs por colaboradores
-  - Aprovação/Rejeição de pedidos por administradores
-  - Atualização automática do estoque
-
-- **Perfil de Usuário**
-  - Visualização de nome, e-mail e papel (Administrador / Colaborador)
-  - Opção para sair da conta
+A solução desenvolvida neste repositório consiste na criação de uma **plataforma mobile para gerenciamento de EPIs**.  
+O sistema controla estoque, pedidos, aprovação de administradores e reposição de materiais, utilizando React Native + Expo e Supabase.
 
 ---
 
-## Tecnologias Utilizadas
-
-| Camada | Tecnologia | Descrição |
-|--------|-------------|------------|
-| **Frontend** | [React Native](https://reactnative.dev/) + [Expo](https://expo.dev/) | Desenvolvimento mobile multiplataforma |
-| **Backend / Banco** | [Supabase](https://supabase.com/) | Banco de dados PostgreSQL, autenticação e API |
-| **Linguagem** | TypeScript / JavaScript | Base da aplicação |
-| **Gerenciamento de Estado** | React Hooks | Controle dos dados e estados da interface |
-| **Testes** | Expo Go | Testes em dispositivos físicos e simuladores |
+#  Equipe do Projeto
+**202302380972 – Otavio Rodrigues Machado**  
+**202304039569 – Anna Lua Frisa Franzati**  
 
 ---
 
-## Estrutura do Projeto
+#  Sumário
+1. Requisitos  
+2. Configuração de acesso aos dados  
+3. Estrutura do projeto  
+4. Instalação no Windows 11  
+5. Execução do projeto  
+6. Telas do projeto
+
+---
+
+#  1. Requisitos
+
+### Linguagens & Ferramentas
+- NodeJS LTS 20+
+- React Native 0.73+
+- Expo SDK 50+
+- Expo Go (Android/iOS)
+- Python 3.10+
+- Supabase (Auth + DB + Policies + Email Templates)
+
+---
+
+#  2. Banco de Dados
+
+### Tabelas
+
+## `profiles`
+| Campo | Tipo | Descrição |
+|------|------|-----------|
+| id | UUID | ID do usuário |
+| full_name | text | Nome |
+| role | text | ADMIN/EMPLOYEE |
+| created_at | timestamp | Data |
+
+## `epis`
+| Campo | Tipo |
+|------|------|
+| id | UUID |
+| name | text |
+| size | text |
+| qty | int |
+| is_active | boolean |
+
+## `requests`
+| Campo | Tipo |
+|------|------|
+| id | UUID |
+| employee_id | UUID |
+| status | PENDING / APPROVED / REJECTED |
+| reason | text |
+| created_at | timestamp |
+| is_hidden | boolean |
+
+## `request_items`
+| Campo | Tipo |
+|------|------|
+| id | UUID |
+| request_id | UUID |
+| epi_id | UUID |
+| qty_requested | int |
+
+---
+
+#  3. Configuração de Acesso
+
+Crie um arquivo `.env` no diretório `/frontend`:
+
+```
+EXPO_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=xxxxxx
+```
+
+---
+
+#  4. Estrutura do Projeto
 
 ```
 projetoMovel/
-├── app/
-│   ├── (admin)/         → Telas de administração (controle de estoque, pedidos)
-│   ├── (employee)/      → Telas do colaborador
-│   ├── (auth)/          → Login, cadastro e recuperação de senha
-│   ├── index.tsx        → Tela inicial
-│   └── _layout.tsx      → Navegação principal
-├── src/
-│   ├── lib/
-│   │   └── supabase.ts  → Configuração do Supabase
-│   └── components/
-│       └── ProfileSheet.tsx
-├── package.json
-└── README.md
+├── apresentacao/
+├── backend/
+│   └── password-reset/
+│       ├── app.py
+│       ├── requirements.txt
+│       ├── vercel.json
+│       ├── static/
+│       └── templates/
+├── documentacao/
+├── frontend/
+│   ├── app/
+│   ├── src/
+│   ├── assets/
+│   ├── package.json
+│   └── readme.md
+└── video/
 ```
 
 ---
 
-## Como Executar o Projeto
+#  5. Instalação (Windows 11)
 
-### 1. Clone o repositório
-```bash
-git clone https://github.com/otaviorm/projetoMovel.git
-cd projetoMovel
+Instale o Chocolatey:
+
+```powershell
+Set-ExecutionPolicy AllSigned
+Set-ExecutionPolicy Bypass -Scope Process -Force; `
+[System.Net.ServicePointManager]::SecurityProtocol = `
+[System.Net.ServicePointManager]::SecurityProtocol -bor 3072; `
+iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 ```
 
-### 2. Instale as dependências
+Instale dependências:
+
+```
+choco install nodejs-lts -y
+choco install openjdk17 -y
+```
+
+---
+
+#  6. Executando o Projeto
+
+No diretório `frontend/`:
+
 ```bash
 npm install
-```
-
-### 3. Configure o Supabase
-Crie um arquivo `.env` na raiz com as seguintes variáveis:
-```bash
-EXPO_PUBLIC_SUPABASE_URL=https://<sua-url>.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=<sua-chave-anon>
-```
-
-### 4. Inicie o app
-```bash
 npx expo start
 ```
 
- Escaneie o QR code com o **Expo Go** (Android ou iOS).
-
 ---
 
-## Estrutura de Perfis
+#  7. Telas do Projeto
 
-- **Administrador**
-  - Acesso total ao estoque e aos pedidos
-  - Pode cadastrar, editar e aprovar solicitações
-- **Colaborador**
-  - Pode solicitar EPIs e acompanhar o status dos pedidos
-  - Acesso restrito apenas às suas próprias requisições
-
----
-
-## Banco de Dados (Supabase)
-
-Tabelas principais:
-
-- **profiles** → dados de usuário (nome, papel, email)
-- **epis** → lista de equipamentos com quantidade
-- **requests** → solicitações de EPIs (pendente, aprovado, rejeitado)
-- **request_items** → relação entre pedidos e EPIs
-- **stock_moves** → histórico de movimentações de estoque
-
----
-
-## Testes Realizados
-
-- Login e logout de usuários  
-- Criação de novos pedidos  
-- Aprovação e rejeição de pedidos  
-- Atualização de estoque em tempo real  
-- Redefinição de senha  
-- Criação de novos colaboradores  
-
----
-
-## Layout
-
-Interface simples, intuitiva e em português, pensada para fácil utilização por colaboradores de diferentes níveis de escolaridade.
-
----
-
-## Autor
-
-| Nome | Função | Contato |
-|------|--------|----------|
-| **Otavio Rodrigues Machado** | Desenvolvimento, testes e documentação | [GitHub](https://github.com/otaviorm) |
-
----
-
-## Licença
-
-Este projeto foi desenvolvido para fins acadêmicos na disciplina de **Programação Para Dispositivos Móveis em Android**  
-**UNIMETROCAMP Wyden – 2025**
-
----
-
-## Agradecimentos
-
-Agradecimentos especiais ao professor Luiz Gustavo Turatti pelo suporte técnico e orientação no desenvolvimento do projeto.
+- Tela de Login  
+- Tela de Criação de Usuário  
+- Tela de Recuperação de Senha (Vercel)  
+- Tela Inicial (do Colaborador)  
+- Tela de Fazer Pedido  
+- Tela “Meus Pedidos”  
+- Tela Inicial (do Administrador)
+- Tela do Catálogo de EPIs
+- Tela de Cadastro de Novo EPI
+- Tela de Alertas
+- Tela de Entrada de EPIs
+- Tela de Saída de EPIs
+- Tela de Pedidos Pendentes

@@ -156,7 +156,7 @@ export default function ProfileScreen() {
           {isAdmin && (
             <>
               <ActionButton
-                title="Ver EPIs disponíveis"
+                title="Catálogo de EPIs"
                 subtitle="Catálogo e manutenção"
                 onPress={() => router.push('/(admin)/epis')}
               />
@@ -168,7 +168,7 @@ export default function ProfileScreen() {
               />
 
               <ActionButton
-                title="Ver Alertas"
+                title="Alertas"
                 subtitle="Estoque baixo e notificações"
                 onPress={() => router.push('/(admin)/alerts')}
               />
